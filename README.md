@@ -1,6 +1,9 @@
 # validation
 
-[![GoDoc](https://godoc.org/github.com/jellydator/validation?status.png)](http://godoc.org/github.com/jellydator/validation)
+[![Go Reference](https://pkg.go.dev/badge/github.com/jellydator/validation.svg)](https://pkg.go.dev/github.com/jellydator/validation)
+[![Build Status](https://github.com/jellydator/validation/actions/workflows/go.yml/badge.svg)](https://github.com/jellydator/validation/actions/workflows/go.yml)
+[![Coverage Status](https://coveralls.io/repos/github/jellydator/validation/badge.svg?branch=master)](https://coveralls.io/github/jellydator/validation?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jellydator/validation)](https://goreportcard.com/report/github.com/jellydator/validation)
 
 ## Description
 
