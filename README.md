@@ -1,13 +1,10 @@
-# ozzo-validation
+# validation
 
-[![GoDoc](https://godoc.org/github.com/go-ozzo/ozzo-validation?status.png)](http://godoc.org/github.com/go-ozzo/ozzo-validation)
-[![Build Status](https://travis-ci.org/go-ozzo/ozzo-validation.svg?branch=master)](https://travis-ci.org/go-ozzo/ozzo-validation)
-[![Coverage Status](https://coveralls.io/repos/github/go-ozzo/ozzo-validation/badge.svg?branch=master)](https://coveralls.io/github/go-ozzo/ozzo-validation?branch=master)
-[![Go Report](https://goreportcard.com/badge/github.com/go-ozzo/ozzo-validation)](https://goreportcard.com/report/github.com/go-ozzo/ozzo-validation)
+[![GoDoc](https://godoc.org/github.com/jellydator/validation?status.png)](http://godoc.org/github.com/jellydator/validation)
 
 ## Description
 
-ozzo-validation is a Go package that provides configurable and extensible data validation capabilities.
+validation is a Go package that provides configurable and extensible data validation capabilities.
 It has the following features:
 
 * use normal programming constructs rather than error-prone struct tags to specify how data should be validated.
@@ -28,7 +25,7 @@ Go 1.13 or above.
 
 ## Getting Started
 
-The ozzo-validation package mainly includes a set of validation rules and two validation methods. You use 
+The validation package mainly includes a set of validation rules and two validation methods. You use 
 validation rules to describe how a value should be considered valid, and you call either `validation.Validate()`
 or `validation.ValidateStruct()` to validate the value.
 
@@ -38,7 +35,7 @@ or `validation.ValidateStruct()` to validate the value.
 Run the following command to install the package:
 
 ```
-go get github.com/go-ozzo/ozzo-validation
+go get github.com/jellydator/validation
 ```
 
 ### Validating a Simple Value
@@ -51,8 +48,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/jellydator/validation"
+	"github.com/jellydator/validation/is"
 )
 
 func main() {
