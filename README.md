@@ -380,6 +380,9 @@ If a data type implements the `sql.Valuer` interface (e.g. `sql.NullString`), th
 it properly. In particular, when a rule is validating such data, it will call the `Value()` method and validate
 the returned value instead.
 
+Note that for this to work, 
+`validation.SetValuerProxy(validation.DefaultValuerProxy)` needs to be called
+before executing any validation functions.
 
 ### Required vs. Not Nil
 

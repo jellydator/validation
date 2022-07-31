@@ -1,4 +1,4 @@
-// Copyright 2016 Qiang Xue. All rights reserved.
+// Copyright 2016 Qiang Xue, 2022 Jellydator. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -12,16 +12,16 @@ import (
 	"time"
 )
 
-// Interface for transforming values to validation proxies.
+// ValuerProxy is used to transform driver.Valuer values before
+// validating them.
 //
 // The input is the value to transform and the output is
-// the new value and a boolean whether the value was
+// the new value and a boolean indicating whether the value was
 // actually transformed.
-type ValidationValuer func(interface{}) (interface{}, bool)
+type ValuerProxy func(interface{}) (interface{}, bool)
 
-// Default tranformation function to convert sql.driver.Valuer
-// based values
-func sqlValueValuer(orig interface{}) (interface{}, bool) {
+// DefaultValuerProxy is the default implementation of ValuerProxy.
+func DefaultValuerProxy(orig interface{}) (interface{}, bool) {
 	if valuer, ok := orig.(driver.Valuer); ok {
 		if value, err := valuer.Value(); err == nil {
 			return value, true
@@ -31,8 +31,8 @@ func sqlValueValuer(orig interface{}) (interface{}, bool) {
 }
 
 var (
-	bytesType          = reflect.TypeOf([]byte(nil))
-	getValidationProxy = sqlValueValuer
+	bytesType   = reflect.TypeOf([]byte(nil))
+	valuerProxy ValuerProxy
 )
 
 // EnsureString ensures the given value is a string.
@@ -166,8 +166,8 @@ func Indirect(value interface{}) (interface{}, bool) {
 		}
 	}
 
-	if getValidationProxy != nil {
-		if val, ok := getValidationProxy(value); ok {
+	if valuerProxy != nil {
+		if val, ok := valuerProxy(value); ok {
 			return Indirect(val)
 		}
 	}
@@ -175,6 +175,9 @@ func Indirect(value interface{}) (interface{}, bool) {
 	return value, false
 }
 
-func SetValidationValuer(valuer ValidationValuer) {
-	getValidationProxy = valuer
+// SetValuerProxy allows the global ValuerProxy to be updated.
+// If the value is nil, the global ValuerProxy is disabled.
+// The global ValuerProxy is nil by default.
+func SetValuerProxy(valuer ValuerProxy) {
+	valuerProxy = valuer
 }
