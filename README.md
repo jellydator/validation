@@ -7,6 +7,8 @@
 
 ## Description
 
+This is an actively maintained fork of [ozzo-validation](https://github.com/go-ozzo/ozzo-validation).
+
 validation is a Go package that provides configurable and extensible data validation capabilities.
 It has the following features:
 
