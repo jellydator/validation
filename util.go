@@ -12,6 +12,20 @@ import (
 	"time"
 )
 
+// CmpOperator is used to define comparison operators.
+type CmpOperator int
+
+// Available comparison operators.
+const (
+	GreaterThan CmpOperator = iota
+	GreaterEqualThan
+	LessThan
+	LessEqualThan
+)
+
+// CmpFunc is used to compare two values.
+type CmpFunc func(op CmpOperator, v1, v2 interface{}) bool
+
 // ValuerProxy is used to transform driver.Valuer values before
 // validating them.
 //

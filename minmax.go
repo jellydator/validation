@@ -1,4 +1,4 @@
-// Copyright 2016 Qiang Xue. All rights reserved.
+// Copyright 2016 Qiang Xue, 2022 Jellydator. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -24,16 +24,10 @@ var (
 // ThresholdRule is a validation rule that checks if a value satisfies the specified threshold requirement.
 type ThresholdRule struct {
 	threshold interface{}
-	operator  int
+	operator  CmpOperator
 	err       Error
+	cmp       CmpFunc
 }
-
-const (
-	greaterThan = iota
-	greaterEqualThan
-	lessThan
-	lessEqualThan
-)
 
 // Min returns a validation rule that checks if a value is greater or equal than the specified value.
 // By calling Exclusive, the rule will check if the value is strictly greater than the specified value.
@@ -43,10 +37,9 @@ const (
 func Min(min interface{}) ThresholdRule {
 	return ThresholdRule{
 		threshold: min,
-		operator:  greaterEqualThan,
+		operator:  GreaterEqualThan,
 		err:       ErrMinGreaterEqualThanRequired,
 	}
-
 }
 
 // Max returns a validation rule that checks if a value is less or equal than the specified value.
@@ -57,20 +50,27 @@ func Min(min interface{}) ThresholdRule {
 func Max(max interface{}) ThresholdRule {
 	return ThresholdRule{
 		threshold: max,
-		operator:  lessEqualThan,
+		operator:  LessEqualThan,
 		err:       ErrMaxLessEqualThanRequired,
 	}
 }
 
 // Exclusive sets the comparison to exclude the boundary value.
 func (r ThresholdRule) Exclusive() ThresholdRule {
-	if r.operator == greaterEqualThan {
-		r.operator = greaterThan
+	if r.operator == GreaterEqualThan {
+		r.operator = GreaterThan
 		r.err = ErrMinGreaterThanRequired
-	} else if r.operator == lessEqualThan {
-		r.operator = lessThan
+	} else if r.operator == LessEqualThan {
+		r.operator = LessThan
 		r.err = ErrMaxLessThanRequired
 	}
+	return r
+}
+
+// CmpFunc sets a custom comparison function that is used during
+// validation.
+func (r ThresholdRule) CmpFunc(fn CmpFunc) ThresholdRule {
+	r.cmp = fn
 	return r
 }
 
@@ -81,50 +81,56 @@ func (r ThresholdRule) Validate(value interface{}) error {
 		return nil
 	}
 
-	rv := reflect.ValueOf(r.threshold)
-	switch rv.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v, err := ToInt(value)
-		if err != nil {
-			return err
-		}
-		if r.compareInt(rv.Int(), v) {
+	if r.cmp != nil {
+		if r.cmp(r.operator, r.threshold, value) {
 			return nil
 		}
+	} else {
+		rv := reflect.ValueOf(r.threshold)
+		switch rv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			v, err := ToInt(value)
+			if err != nil {
+				return err
+			}
+			if r.compareInt(rv.Int(), v) {
+				return nil
+			}
 
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		v, err := ToUint(value)
-		if err != nil {
-			return err
-		}
-		if r.compareUint(rv.Uint(), v) {
-			return nil
-		}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			v, err := ToUint(value)
+			if err != nil {
+				return err
+			}
+			if r.compareUint(rv.Uint(), v) {
+				return nil
+			}
 
-	case reflect.Float32, reflect.Float64:
-		v, err := ToFloat(value)
-		if err != nil {
-			return err
-		}
-		if r.compareFloat(rv.Float(), v) {
-			return nil
-		}
+		case reflect.Float32, reflect.Float64:
+			v, err := ToFloat(value)
+			if err != nil {
+				return err
+			}
+			if r.compareFloat(rv.Float(), v) {
+				return nil
+			}
 
-	case reflect.Struct:
-		t, ok := r.threshold.(time.Time)
-		if !ok {
+		case reflect.Struct:
+			t, ok := r.threshold.(time.Time)
+			if !ok {
+				return fmt.Errorf("type not supported: %v", rv.Type())
+			}
+			v, ok := value.(time.Time)
+			if !ok {
+				return fmt.Errorf("cannot convert %v to time.Time", reflect.TypeOf(value))
+			}
+			if v.IsZero() || r.compareTime(t, v) {
+				return nil
+			}
+
+		default:
 			return fmt.Errorf("type not supported: %v", rv.Type())
 		}
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("cannot convert %v to time.Time", reflect.TypeOf(value))
-		}
-		if v.IsZero() || r.compareTime(t, v) {
-			return nil
-		}
-
-	default:
-		return fmt.Errorf("type not supported: %v", rv.Type())
 	}
 
 	return r.err.SetParams(map[string]interface{}{"threshold": r.threshold})
@@ -144,11 +150,11 @@ func (r ThresholdRule) ErrorObject(err Error) ThresholdRule {
 
 func (r ThresholdRule) compareInt(threshold, value int64) bool {
 	switch r.operator {
-	case greaterThan:
+	case GreaterThan:
 		return value > threshold
-	case greaterEqualThan:
+	case GreaterEqualThan:
 		return value >= threshold
-	case lessThan:
+	case LessThan:
 		return value < threshold
 	default:
 		return value <= threshold
@@ -157,11 +163,11 @@ func (r ThresholdRule) compareInt(threshold, value int64) bool {
 
 func (r ThresholdRule) compareUint(threshold, value uint64) bool {
 	switch r.operator {
-	case greaterThan:
+	case GreaterThan:
 		return value > threshold
-	case greaterEqualThan:
+	case GreaterEqualThan:
 		return value >= threshold
-	case lessThan:
+	case LessThan:
 		return value < threshold
 	default:
 		return value <= threshold
@@ -170,11 +176,11 @@ func (r ThresholdRule) compareUint(threshold, value uint64) bool {
 
 func (r ThresholdRule) compareFloat(threshold, value float64) bool {
 	switch r.operator {
-	case greaterThan:
+	case GreaterThan:
 		return value > threshold
-	case greaterEqualThan:
+	case GreaterEqualThan:
 		return value >= threshold
-	case lessThan:
+	case LessThan:
 		return value < threshold
 	default:
 		return value <= threshold
@@ -183,11 +189,11 @@ func (r ThresholdRule) compareFloat(threshold, value float64) bool {
 
 func (r ThresholdRule) compareTime(threshold, value time.Time) bool {
 	switch r.operator {
-	case greaterThan:
+	case GreaterThan:
 		return value.After(threshold)
-	case greaterEqualThan:
+	case GreaterEqualThan:
 		return value.After(threshold) || value.Equal(threshold)
-	case lessThan:
+	case LessThan:
 		return value.Before(threshold)
 	default:
 		return value.Before(threshold) || value.Equal(threshold)
