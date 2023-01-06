@@ -149,6 +149,15 @@ func TestValidateStructWithContext(t *testing.T) {
 	m1 := Model1{A: "abc", B: "xyz", c: "abc", G: "xyz"}
 	m2 := Model2{Model3: Model3{A: "internal"}, M3: Model3{A: "external"}}
 	m3 := Model5{}
+  m4 := struct {
+    A int
+    B struct {
+        C struct {
+            D string
+        }
+    }
+  }{}
+
 	tests := []struct {
 		tag   string
 		model interface{}
@@ -161,6 +170,7 @@ func TestValidateStructWithContext(t *testing.T) {
 		{"t1.3", &m1, []*FieldRules{Field(&m1.A, &validateContextXyz{}), Field(&m1.c, &validateContextXyz{})}, "A: error xyz; c: error xyz."},
 		{"t1.4", &m1, []*FieldRules{Field(&m1.G, &validateContextAbc{})}, "g: error abc."},
 		{"t1.5", &m2, []*FieldRules{FieldStruct(&m2.M3, Field(&m2.M3.A, Required, Length(10, 15)))}, "M3: (A: the length must be between 10 and 15.)."},
+		{"t1.6", &m4, []*FieldRules{FieldStruct(&m4.B, FieldStruct(&m4.B.C, Field(&m4.B.C.D, Required)))}, "B: (C: (D: cannot be blank.).)."},
 		// skip rule
 		{"t2.1", &m1, []*FieldRules{Field(&m1.G, Skip, &validateContextAbc{})}, ""},
 		{"t2.2", &m1, []*FieldRules{Field(&m1.G, &validateContextAbc{}, Skip)}, "g: error abc."},
