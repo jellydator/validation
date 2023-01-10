@@ -138,31 +138,6 @@ func Field(fieldPtr interface{}, rules ...Rule) *FieldRules {
 	}
 }
 
-// ErrorFieldName gets the value of the `json` tag for the given field in the given struct
-func ErrorFieldName(structPtr interface{}, fieldPtr interface{}) (string, error) {
-	value := reflect.ValueOf(structPtr)
-	if value.Kind() != reflect.Ptr || !value.IsNil() && value.Elem().Kind() != reflect.Struct {
-		// must be a pointer to a struct
-		return "", NewInternalError(ErrStructPointer)
-	}
-	if value.IsNil() {
-		// treat a nil struct pointer as valid
-		return "", nil
-	}
-	value = value.Elem()
-
-	fv := reflect.ValueOf(fieldPtr)
-	if fv.Kind() != reflect.Ptr {
-		// must be a pointer to a field
-		return "", NewInternalError(ErrFieldPointer(0))
-	}
-	ft := findStructField(value, fv)
-	if ft == nil {
-		return "", NewInternalError(ErrFieldNotFound(0))
-	}
-	return getErrorFieldName(ft), nil
-}
-
 // FieldStruct specifies a struct field and the corresponding validation field rules.
 // The struct field must be specified as a pointer to struct.
 // example,
@@ -192,6 +167,31 @@ func FieldStruct(structPtr interface{}, fields ...*FieldRules) *FieldRules {
 		}},
 		validatePtrValue: true,
 	}
+}
+
+// ErrorFieldName gets the value of the `json` tag for the given field in the given struct
+func ErrorFieldName(structPtr interface{}, fieldPtr interface{}) (string, error) {
+	value := reflect.ValueOf(structPtr)
+	if value.Kind() != reflect.Ptr || !value.IsNil() && value.Elem().Kind() != reflect.Struct {
+		// must be a pointer to a struct
+		return "", NewInternalError(ErrStructPointer)
+	}
+	if value.IsNil() {
+		// treat a nil struct pointer as valid
+		return "", nil
+	}
+	value = value.Elem()
+
+	fv := reflect.ValueOf(fieldPtr)
+	if fv.Kind() != reflect.Ptr {
+		// must be a pointer to a field
+		return "", NewInternalError(ErrFieldPointer(0))
+	}
+	ft := findStructField(value, fv)
+	if ft == nil {
+		return "", NewInternalError(ErrFieldNotFound(0))
+	}
+	return getErrorFieldName(ft), nil
 }
 
 // findStructField looks for a field in the given struct.
