@@ -138,7 +138,7 @@ func Field(fieldPtr interface{}, rules ...Rule) *FieldRules {
 	}
 }
 
-// Field specifies a struct field and the corresponding validation field rules.
+// FieldStruct specifies a struct field and the corresponding validation field rules.
 // The struct field must be specified as a pointer to struct.
 // example,
 //
