@@ -228,7 +228,7 @@ func Test_getErrorFieldName(t *testing.T) {
 	assert.Equal(t, "JSONIgnoredField", getErrorFieldName(jsonIgnoredField))
 }
 
-func TestFindStructFieldJSONName(t *testing.T) {
+func TestErrorFieldName(t *testing.T) {
 	type args struct {
 		structPtr interface{}
 		fieldPtr  interface{}
