@@ -26,8 +26,9 @@ type (
 
 	// FieldRules represents a rule set associated with a struct field.
 	FieldRules struct {
-		fieldPtr interface{}
-		rules    []Rule
+		fieldPtr         interface{}
+		rules            []Rule
+		validatePtrValue bool
 	}
 )
 
@@ -47,16 +48,16 @@ func (e ErrFieldNotFound) Error() string {
 // should be specified as a pointer to the field. A field can be associated with multiple rules.
 // For example,
 //
-//    value := struct {
-//        Name  string
-//        Value string
-//    }{"name", "demo"}
-//    err := validation.ValidateStruct(&value,
-//        validation.Field(&a.Name, validation.Required),
-//        validation.Field(&a.Value, validation.Required, validation.Length(5, 10)),
-//    )
-//    fmt.Println(err)
-//    // Value: the length must be between 5 and 10.
+//	value := struct {
+//	    Name  string
+//	    Value string
+//	}{"name", "demo"}
+//	err := validation.ValidateStruct(&value,
+//	    validation.Field(&a.Name, validation.Required),
+//	    validation.Field(&a.Value, validation.Required, validation.Length(5, 10)),
+//	)
+//	fmt.Println(err)
+//	// Value: the length must be between 5 and 10.
 //
 // An error will be returned if validation fails.
 func ValidateStruct(structPtr interface{}, fields ...*FieldRules) error {
@@ -90,12 +91,21 @@ func ValidateStructWithContext(ctx context.Context, structPtr interface{}, field
 		if ft == nil {
 			return NewInternalError(ErrFieldNotFound(i))
 		}
+
+		var validateValue interface{}
+		if !fr.validatePtrValue {
+			validateValue = fv.Elem().Interface()
+		} else {
+			validateValue = fv.Interface()
+		}
+
 		var err error
 		if ctx == nil {
-			err = Validate(fv.Elem().Interface(), fr.rules...)
+			err = Validate(validateValue, fr.rules...)
 		} else {
-			err = ValidateWithContext(ctx, fv.Elem().Interface(), fr.rules...)
+			err = ValidateWithContext(ctx, validateValue, fr.rules...)
 		}
+
 		if err != nil {
 			if ie, ok := err.(InternalError); ok && ie.InternalError() != nil {
 				return err
@@ -151,6 +161,37 @@ func ErrorFieldName(structPtr interface{}, fieldPtr interface{}) (string, error)
 		return "", NewInternalError(ErrFieldNotFound(0))
 	}
 	return getErrorFieldName(ft), nil
+}
+
+// FieldStruct specifies a struct field and the corresponding validation field rules.
+// The struct field must be specified as a pointer to struct.
+// example,
+//
+//	value := struct {
+//		NestedStruct struct {
+//		  Name string
+//	  }
+//	}{NestedStruct: struct{Name string}{}}
+//	err := validation.ValidateStruct(
+//	  &value,
+//		validation.FieldStruct(
+//	    &value.NestedStruct,
+//	    validation.Field(&value.NestedStruct.Name, validation.Required),
+//	  ),
+//	)
+func FieldStruct(structPtr interface{}, fields ...*FieldRules) *FieldRules {
+	return &FieldRules{
+		fieldPtr: structPtr,
+		rules: []Rule{&inlineRule{
+			f: func(value interface{}) error {
+				return ValidateStruct(value, fields...)
+			},
+			fc: func(ctx context.Context, value interface{}) error {
+				return ValidateStructWithContext(ctx, value, fields...)
+			},
+		}},
+		validatePtrValue: true,
+	}
 }
 
 // findStructField looks for a field in the given struct.

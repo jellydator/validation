@@ -71,6 +71,15 @@ func TestValidateStruct(t *testing.T) {
 	m3 := Model2{}
 	m4 := Model2{M3: Model3{A: "abc"}, Model3: Model3{A: "abc"}}
 	m5 := Model2{Model3: Model3{A: "internal"}}
+  m6 := struct {
+    A int
+    B struct {
+        C struct {
+            D string
+        }
+    }
+  }{}
+
 	tests := []struct {
 		tag   string
 		model interface{}
@@ -88,6 +97,7 @@ func TestValidateStruct(t *testing.T) {
 		{"t2.5", &m1, []*FieldRules{Field(&m1.F, Length(0, 5))}, ""},
 		{"t2.6", &m1, []*FieldRules{Field(&m1.H, Each(&validateAbc{})), Field(&m1.I, Each(&validateAbc{}))}, ""},
 		{"t2.7", &m1, []*FieldRules{Field(&m1.H, Each(&validateXyz{})), Field(&m1.I, Each(&validateXyz{}))}, "H: (0: error xyz; 1: error xyz.); I: (foo: error xyz.)."},
+		{"t2.8", &m6, []*FieldRules{FieldStruct(&m6.B, FieldStruct(&m6.B.C, Field(&m6.B.C.D, Required)))}, "B: (C: (D: cannot be blank.).)."},
 		// non-struct pointer
 		{"t3.1", m1, []*FieldRules{}, ErrStructPointer.Error()},
 		{"t3.2", nil, []*FieldRules{}, ErrStructPointer.Error()},
@@ -150,6 +160,15 @@ func TestValidateStructWithContext(t *testing.T) {
 	m1 := Model1{A: "abc", B: "xyz", c: "abc", G: "xyz"}
 	m2 := Model2{Model3: Model3{A: "internal"}}
 	m3 := Model5{}
+  m4 := struct {
+    A int
+    B struct {
+        C struct {
+            D string
+        }
+    }
+  }{}
+
 	tests := []struct {
 		tag   string
 		model interface{}
@@ -161,6 +180,7 @@ func TestValidateStructWithContext(t *testing.T) {
 		{"t1.2", &m1, []*FieldRules{Field(&m1.A, &validateContextXyz{}), Field(&m1.B, &validateContextAbc{})}, "A: error xyz; B: error abc."},
 		{"t1.3", &m1, []*FieldRules{Field(&m1.A, &validateContextXyz{}), Field(&m1.c, &validateContextXyz{})}, "A: error xyz; c: error xyz."},
 		{"t1.4", &m1, []*FieldRules{Field(&m1.G, &validateContextAbc{})}, "g: error abc."},
+		{"t1.6", &m4, []*FieldRules{FieldStruct(&m4.B, FieldStruct(&m4.B.C, Field(&m4.B.C.D, Required)))}, "B: (C: (D: cannot be blank.).)."},
 		// skip rule
 		{"t2.1", &m1, []*FieldRules{Field(&m1.G, Skip, &validateContextAbc{})}, ""},
 		{"t2.2", &m1, []*FieldRules{Field(&m1.G, &validateContextAbc{}, Skip)}, "g: error abc."},
