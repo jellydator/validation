@@ -169,7 +169,7 @@ func FieldStruct(structPtr interface{}, fields ...*FieldRules) *FieldRules {
 	}
 }
 
-// ErrorFieldName gets the value of the `json` tag for the given field in the given struct
+// ErrorFieldName gets the value of the ErrorTag for the given field in the given struct
 func ErrorFieldName(structPtr interface{}, fieldPtr interface{}) (string, error) {
 	value := reflect.ValueOf(structPtr)
 	if value.Kind() != reflect.Ptr || !value.IsNil() && value.Elem().Kind() != reflect.Struct {
