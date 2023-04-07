@@ -27,18 +27,28 @@ type StringInRule struct {
 }
 
 // Validate checks if the given value is valid or not.
-func (r StringInRule) Validate(value string) error {
-	if IsEmpty(value) {
+func (r StringInRule) Validate(value interface{}) error {
+	_, isStringPtr := value.(*string)
+	indirectValue, isNil := Indirect(value)
+
+	if isNil && isStringPtr {
+		return nil
+	}
+	valueAsString, err := EnsureString(indirectValue)
+	if err != nil {
+		return err
+	}
+	if IsEmpty(indirectValue) {
 		return nil
 	}
 
 	for _, e := range r.elements {
 		if r.isCaseSensitive {
-			if e == value {
+			if e == valueAsString {
 				return nil
 			}
 		} else {
-			if strings.EqualFold(e, value) {
+			if strings.EqualFold(e, valueAsString) {
 				return nil
 			}
 		}

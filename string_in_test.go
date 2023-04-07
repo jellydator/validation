@@ -11,32 +11,44 @@ import (
 )
 
 func TestStringIn(t *testing.T) {
+	var v1 = "A"
+	var v2 *string
+	var v3 = "a"
 	tests := []struct {
 		tag             string
 		isCaseSensitive bool
 		values          []string
-		value           string
+		value           interface{}
 		err             string
 	}{
 		{"t0", true, []string{"A", "B"}, "", ""},
 		{"t1", true, []string{"A", "B"}, "A", ""},
 		{"t2", true, []string{"A", "B"}, "B", ""},
 		{"t3", true, []string{"A", "B"}, "C", "must be a valid value"},
-		{"t4", true, []string{}, "C", "must be a valid value"},
-		{"t5", false, []string{"A", "B"}, "", ""},
-		{"t6", false, []string{"A", "B"}, "A", ""},
-		{"t7", false, []string{"A", "B"}, "B", ""},
-		{"t8", false, []string{"A", "B"}, "C", "must be a valid value"},
-		{"t9", false, []string{"A", "B"}, "a", ""},
-		{"t10", false, []string{"A", "B"}, "b", ""},
-		{"t11", false, []string{"A", "B"}, "c", "must be a valid value"},
-		{"t12", false, []string{}, "c", "must be a valid value"},
+		{"t4", true, []string{"A", "B"}, 4, "must be either a string or byte slice"},
+		{"t5", true, []string{}, "C", "must be a valid value"},
+		{"t6", true, []string{"A", "B"}, &v1, ""},
+		{"t7", true, []string{"A", "B"}, v2, ""},
+		{"t8", true, []string{"A", "B"}, (*int)(nil), "must be either a string or byte slice"},
+		{"t9", false, []string{"A", "B"}, "", ""},
+		{"t10", false, []string{"A", "B"}, "A", ""},
+		{"t11", false, []string{"A", "B"}, "B", ""},
+		{"t12", false, []string{"A", "B"}, "C", "must be a valid value"},
+		{"t13", false, []string{"A", "B"}, "a", ""},
+		{"t14", false, []string{"A", "B"}, "b", ""},
+		{"t15", false, []string{"A", "B"}, "c", "must be a valid value"},
+		{"t16", false, []string{"A", "B"}, 4, "must be either a string or byte slice"},
+		{"t17", false, []string{}, "c", "must be a valid value"},
+		{"t18", false, []string{"A", "B"}, &v3, ""},
+		{"t19", false, []string{"A", "B"}, v2, ""},
 	}
 
 	for _, test := range tests {
-		r := StringIn(test.isCaseSensitive, test.values...)
-		err := r.Validate(test.value)
-		assertError(t, test.err, err, test.tag)
+		t.Run(test.tag, func(t *testing.T) {
+			r := StringIn(test.isCaseSensitive, test.values...)
+			err := r.Validate(test.value)
+			assertError(t, test.err, err, test.tag)
+		})
 	}
 }
 
