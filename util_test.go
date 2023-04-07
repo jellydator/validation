@@ -18,7 +18,12 @@ func init() {
 
 func TestEnsureString(t *testing.T) {
 	str := "abc"
-	bytes := []byte("abc")
+	byteSlice := []byte("abc")
+	byteSliceNil := ([]byte)(nil)
+	byteSliceEmpty := []byte{}
+	byteArray := [3]byte{'a', 'b', 'c'}
+	byteArrayEmpty := [0]byte{}
+	intVal := 1
 
 	tests := []struct {
 		tag      string
@@ -28,9 +33,21 @@ func TestEnsureString(t *testing.T) {
 	}{
 		{"t1", "abc", "abc", false},
 		{"t2", &str, "", true},
-		{"t3", bytes, "abc", false},
-		{"t4", &bytes, "", true},
-		{"t5", 100, "", true},
+		{"t3", byteSlice, "abc", false},
+		{"t4", &byteSlice, "", true},
+		{"t5", byteSliceEmpty, "", false},
+		{"t6", &byteSliceEmpty, "", true},
+		{"t7", byteSliceNil, "", false},
+		{"t8", &byteSliceNil, "", true},
+		{"t9", byteArray, "", true},
+		{"t10", &byteArray, "", true},
+		{"t11", byteArrayEmpty, "", true},
+		{"t12", &byteArrayEmpty, "", true},
+		{"t13", 100, "", true},
+		{"t14", (*string)(nil), "", true},
+		{"t15", intVal, "", true},
+		{"t16", &intVal, "", true},
+		{"t17", nil, "", true},
 	}
 	for _, test := range tests {
 		s, err := EnsureString(test.value)
