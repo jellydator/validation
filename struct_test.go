@@ -231,6 +231,12 @@ func Test_getErrorFieldName(t *testing.T) {
 }
 
 func Test_GetErrorFieldName_Override(t *testing.T) {
+	// get the default so that we can revert when done with this test
+	origGetErrorFieldName := GetErrorFieldName
+	defer func() {
+		GetErrorFieldName = origGetErrorFieldName
+	}()
+
 	var s1 Struct1
 	v1 := reflect.ValueOf(&s1).Elem()
 
