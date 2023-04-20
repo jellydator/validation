@@ -24,7 +24,9 @@ var (
 type (
 	// MapRule represents a rule set associated with a map.
 	MapRule struct {
-		keys           []*KeyRules
+		keys           []Rule
+		values         []Rule
+		distinctKeys   []*KeyRules
 		allowExtraKeys bool
 	}
 
@@ -41,19 +43,32 @@ type (
 // Use Key() to specify map keys that need to be validated. Each Key() call specifies a single key which can
 // be associated with multiple rules.
 // For example,
-//    validation.Map(
-//        validation.Key("Name", validation.Required),
-//        validation.Key("Value", validation.Required, validation.Length(5, 10)),
-//    )
+//
+//	validation.Map(
+//	    validation.Key("Name", validation.Required),
+//	    validation.Key("Value", validation.Required, validation.Length(5, 10)),
+//	)
 //
 // A nil value is considered valid. Use the Required rule to make sure a map value is present.
 func Map(keys ...*KeyRules) MapRule {
-	return MapRule{keys: keys}
+	return MapRule{distinctKeys: keys}
 }
 
 // AllowExtraKeys configures the rule to ignore extra keys.
 func (r MapRule) AllowExtraKeys() MapRule {
 	r.allowExtraKeys = true
+	return r
+}
+
+// Keys specifies rules for all map key names.
+func (r MapRule) Keys(rules ...Rule) MapRule {
+	r.keys = rules
+	return r
+}
+
+// Values specifies rules for all map values.
+func (r MapRule) Values(rules ...Rule) MapRule {
+	r.values = rules
 	return r
 }
 
@@ -80,15 +95,12 @@ func (r MapRule) ValidateWithContext(ctx context.Context, m interface{}) error {
 	errs := Errors{}
 	kt := value.Type().Key()
 
-	var extraKeys map[interface{}]bool
+	var visited map[interface{}]struct{}
 	if !r.allowExtraKeys {
-		extraKeys = make(map[interface{}]bool, value.Len())
-		for _, k := range value.MapKeys() {
-			extraKeys[k.Interface()] = true
-		}
+		visited = make(map[interface{}]struct{})
 	}
 
-	for _, kr := range r.keys {
+	for _, kr := range r.distinctKeys {
 		var err error
 		if kv := reflect.ValueOf(kr.key); !kt.AssignableTo(kv.Type()) {
 			err = ErrKeyWrongType
@@ -97,30 +109,78 @@ func (r MapRule) ValidateWithContext(ctx context.Context, m interface{}) error {
 				err = ErrKeyMissing
 			}
 		} else if ctx == nil {
-			err = Validate(vv.Interface(), kr.rules...)
+			if r.keys != nil {
+				err = Validate(kr.key, r.keys...)
+			}
+			if err == nil {
+				err = Validate(vv.Interface(), append(r.values, kr.rules...)...)
+			}
 		} else {
-			err = ValidateWithContext(ctx, vv.Interface(), kr.rules...)
+			if r.keys != nil {
+				err = ValidateWithContext(ctx, kr.key, r.keys...)
+			}
+			if err == nil {
+				err = ValidateWithContext(ctx, vv.Interface(), append(r.values, kr.rules...)...)
+			}
 		}
 		if err != nil {
 			if ie, ok := err.(InternalError); ok && ie.InternalError() != nil {
 				return err
 			}
+
 			errs[getErrorKeyName(kr.key)] = err
 		}
+
 		if !r.allowExtraKeys {
-			delete(extraKeys, kr.key)
+			visited[kr.key] = struct{}{}
 		}
 	}
 
-	if !r.allowExtraKeys {
-		for key := range extraKeys {
-			errs[getErrorKeyName(key)] = ErrKeyUnexpected
+	if !r.allowExtraKeys || len(r.keys) != 0 || len(r.values) != 0 {
+		for _, kv := range value.MapKeys() {
+			key := kv.Interface()
+
+			if _, ok := visited[key]; ok {
+				continue
+			}
+
+			if !r.allowExtraKeys {
+				errs[getErrorKeyName(key)] = ErrKeyUnexpected
+				continue
+			}
+
+			var err error
+			if len(r.keys) != 0 {
+				if ctx == nil {
+					err = Validate(key, r.keys...)
+				} else {
+					err = ValidateWithContext(ctx, key, r.keys...)
+				}
+			}
+
+			if err == nil && len(r.values) != 0 {
+				vv := value.MapIndex(kv)
+				if ctx == nil {
+					err = Validate(vv.Interface(), r.values...)
+				} else {
+					err = ValidateWithContext(ctx, vv.Interface(), r.values...)
+				}
+			}
+
+			if err != nil {
+				if ie, ok := err.(InternalError); ok && ie.InternalError() != nil {
+					return err
+				}
+
+				errs[getErrorKeyName(key)] = err
+			}
 		}
 	}
 
 	if len(errs) > 0 {
 		return errs
 	}
+
 	return nil
 }
 
