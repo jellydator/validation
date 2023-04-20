@@ -628,6 +628,8 @@ The following rules are provided in the `validation` package:
 
 * `In(...interface{})`: checks if a value can be found in the given list of values.
 * `NotIn(...interface{})`: checks if a value is NOT among the given list of values.
+* `StringIn(...interface{})`: checks if a value can be found in the given list of values, optionally case sensitive.
+* `StringNotIn(...interface{})`: checks if a value is NOT among the given list of values, optionally case sensitive.
 * `Length(min, max int)`: checks if the length of a value is within the specified range.
   This rule should only be used for validating strings, slices, maps, and arrays.
 * `RuneLength(min, max int)`: checks if the length of a string is within the specified range.
