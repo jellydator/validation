@@ -15,6 +15,8 @@ import (
 var (
 	// ErrStructPointer is the error that a struct being validated is not specified as a pointer.
 	ErrStructPointer = errors.New("only a pointer to a struct can be validated")
+	// GetErrorFieldName is used to get the desired field name for a struct field, overriding the default getErrorFieldName
+	GetErrorFieldName func(f *reflect.StructField) string = getErrorFieldName
 )
 
 type (
@@ -119,7 +121,7 @@ func ValidateStructWithContext(ctx context.Context, structPtr interface{}, field
 					continue
 				}
 			}
-			errs[getErrorFieldName(ft)] = err
+			errs[GetErrorFieldName(ft)] = err
 		}
 	}
 

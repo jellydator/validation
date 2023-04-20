@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,8 +23,9 @@ type Struct1 struct {
 	Struct2
 	S1               *Struct2
 	S2               Struct2
-	JSONField        int `json:"some_json_field"`
-	JSONIgnoredField int `json:"-"`
+	JSONField        int    `json:"some_json_field"`
+	JSONIgnoredField int    `json:"-"`
+	ProtobufField    string `protobuf:"bytes,1,opt,name=some_protobuf_field,json=someProtobufField,proto3" json:"some_protobuf_field,omitempty"`
 }
 
 type Struct2 struct {
@@ -71,14 +73,14 @@ func TestValidateStruct(t *testing.T) {
 	m3 := Model2{}
 	m4 := Model2{M3: Model3{A: "abc"}, Model3: Model3{A: "abc"}}
 	m5 := Model2{Model3: Model3{A: "internal"}}
-  m6 := struct {
-    A int
-    B struct {
-        C struct {
-            D string
-        }
-    }
-  }{}
+	m6 := struct {
+		A int
+		B struct {
+			C struct {
+				D string
+			}
+		}
+	}{}
 
 	tests := []struct {
 		tag   string
@@ -160,14 +162,14 @@ func TestValidateStructWithContext(t *testing.T) {
 	m1 := Model1{A: "abc", B: "xyz", c: "abc", G: "xyz"}
 	m2 := Model2{Model3: Model3{A: "internal"}}
 	m3 := Model5{}
-  m4 := struct {
-    A int
-    B struct {
-        C struct {
-            D string
-        }
-    }
-  }{}
+	m4 := struct {
+		A int
+		B struct {
+			C struct {
+				D string
+			}
+		}
+	}{}
 
 	tests := []struct {
 		tag   string
@@ -192,7 +194,7 @@ func TestValidateStructWithContext(t *testing.T) {
 		assertError(t, test.err, err, test.tag)
 	}
 
-	//embedded struct
+	// embedded struct
 	err := ValidateWithContext(context.Background(), &m3)
 	if assert.NotNil(t, err) {
 		assert.Equal(t, "A: error abc.", err.Error())
@@ -226,6 +228,36 @@ func Test_getErrorFieldName(t *testing.T) {
 	jsonIgnoredField := findStructField(v1, reflect.ValueOf(&s1.JSONIgnoredField))
 	assert.NotNil(t, jsonIgnoredField)
 	assert.Equal(t, "JSONIgnoredField", getErrorFieldName(jsonIgnoredField))
+}
+
+func Test_GetErrorFieldName_Override(t *testing.T) {
+	// get the default so that we can revert when done with this test
+	origGetErrorFieldName := GetErrorFieldName
+	defer func() {
+		GetErrorFieldName = origGetErrorFieldName
+	}()
+
+	var s1 Struct1
+	v1 := reflect.ValueOf(&s1).Elem()
+
+	// custom GetErrorFieldName function to get field name from protocol buffer (proto3) json encoding
+	getErrorFieldNameFromProto3 := func(f *reflect.StructField) string {
+		if tag := f.Tag.Get("protobuf"); tag != "" && tag != "-" {
+			for _, v := range strings.Split(tag, ",") {
+				if vs := strings.Split(v, "="); len(vs) == 2 && vs[0] == "json" {
+					return vs[1]
+				}
+			}
+		}
+		return f.Name
+	}
+
+	//  override the default
+	GetErrorFieldName = getErrorFieldNameFromProto3
+
+	protobufField := findStructField(v1, reflect.ValueOf(&s1.ProtobufField))
+	assert.NotNil(t, protobufField)
+	assert.Equal(t, "someProtobufField", GetErrorFieldName(protobufField))
 }
 
 func TestErrorFieldName(t *testing.T) {
