@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"time"
 )
 
 // CmpOperator is used to define comparison operators.
@@ -131,16 +130,8 @@ func ToFloat(value interface{}) (float64, error) {
 func IsEmpty(value interface{}) bool {
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
-	case reflect.String, reflect.Array, reflect.Map, reflect.Slice:
+	case reflect.Array, reflect.Map, reflect.Slice:
 		return v.Len() == 0
-	case reflect.Bool:
-		return !v.Bool()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
 	case reflect.Invalid:
 		return true
 	case reflect.Interface, reflect.Ptr:
@@ -148,14 +139,9 @@ func IsEmpty(value interface{}) bool {
 			return true
 		}
 		return IsEmpty(v.Elem().Interface())
-	case reflect.Struct:
-		v, ok := value.(time.Time)
-		if ok && v.IsZero() {
-			return true
-		}
+	default:
+		return reflect.DeepEqual(value, reflect.Zero(reflect.TypeOf(value)).Interface())
 	}
-
-	return false
 }
 
 // Indirect returns the value that the given interface or pointer references to.
