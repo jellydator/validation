@@ -16,6 +16,9 @@ func TestRequired(t *testing.T) {
 	s2 := ""
 	var time1 time.Time
 	var myStruct MyStruct
+	b1 := true
+	b2 := false
+	var b3 *bool
 	tests := []struct {
 		tag   string
 		value interface{}
@@ -29,6 +32,11 @@ func TestRequired(t *testing.T) {
 		{"t6", time1, "cannot be blank"},
 		{"t7", myStruct, "cannot be blank"},
 		{"t8", &myStruct, "cannot be blank"},
+		{"t9", b1, ""},
+		{"t10", b2, "cannot be blank"},
+		{"t11", b3, "cannot be blank"},
+		{"t12", &b1, ""},
+		{"t13", &b2, "cannot be blank"},
 	}
 
 	for _, test := range tests {
