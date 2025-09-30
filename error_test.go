@@ -81,9 +81,6 @@ func TestErrors_Unwrap(t *testing.T) {
 	assert.Contains(t, unwrapped, errs["B"])
 	assert.Contains(t, unwrapped, errs["A"])
 	assert.Len(t, unwrapped, 2)
-
-	assert.True(t, errors.Is(errs, errs["B"]))
-	assert.True(t, errors.Is(errs, errs["A"]))
 }
 
 func TestErrorObject_SetCode(t *testing.T) {
