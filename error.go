@@ -141,6 +141,17 @@ func (es Errors) Error() string {
 	return s.String()
 }
 
+// Unwrap returns a slice of the non-nil errors in the Errors.
+func (es Errors) Unwrap() []error {
+	errs := make([]error, 0, len(es))
+	for _, err := range es {
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
 // MarshalJSON converts the Errors into a valid JSON.
 func (es Errors) MarshalJSON() ([]byte, error) {
 	errs := map[string]interface{}{}
