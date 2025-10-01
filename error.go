@@ -123,7 +123,7 @@ func (e ErrorObject) Is(err error) bool {
 		return false
 	}
 
-	if e.message != eo.message && e.code != eo.code {
+	if e.message != eo.message || e.code != eo.code {
 		return false
 	}
 
