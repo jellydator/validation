@@ -112,6 +112,33 @@ func (e ErrorObject) Error() string {
 	return res.String()
 }
 
+// Is checks if this error matches the supplied error.
+// If err is not an ErrorObject, it always returns false.
+// It returns true if Code() and Message() are the same.
+// If err.Params() is non-nil, we also check that all the params match.
+// This way, we can check an error against a sentinel error, such as ErrLengthTooLong.
+func (e ErrorObject) Is(err error) bool {
+	eo, ok := err.(ErrorObject)
+	if !ok {
+		return false
+	}
+
+	if e.message != eo.message || e.code != eo.code {
+		return false
+	}
+
+	if len(eo.params) == 0 {
+		return true
+	}
+
+	for k, v := range e.params {
+		if eo.params[k] != v {
+			return false
+		}
+	}
+	return true
+}
+
 // Error returns the error string of Errors.
 func (es Errors) Error() string {
 	if len(es) == 0 {
