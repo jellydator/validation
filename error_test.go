@@ -70,6 +70,19 @@ func TestErrors_Filter(t *testing.T) {
 	assert.Nil(t, errs.Filter())
 }
 
+func TestErrors_Unwrap(t *testing.T) {
+	errs := Errors{
+		"B": errors.New("B1"),
+		"C": nil,
+		"A": errors.New("A1"),
+	}
+
+	unwrapped := errs.Unwrap()
+	assert.Contains(t, unwrapped, errs["B"])
+	assert.Contains(t, unwrapped, errs["A"])
+	assert.Len(t, unwrapped, 2)
+}
+
 func TestErrorObject_SetCode(t *testing.T) {
 	err := NewError("A", "msg").(ErrorObject)
 
