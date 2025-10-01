@@ -127,6 +127,17 @@ func TestErrorObject_Is(t *testing.T) {
 
 	assert.False(t, err2.Is(err))
 	assert.False(t, errors.Is(err2, err))
+
+	assert.False(t, err.Is(errors.New(err.message)))
+
+	err3 := ErrorObject{code: err.code, message: "hello"}
+	assert.False(t, err.Is(err3))
+
+	err4 := ErrorObject{code: "test_error", message: err.message}
+	assert.False(t, err.Is(err4))
+
+	err5 := ErrorObject{code: err.code, message: err.message, params: err.params}
+	assert.True(t, err.Is(err5))
 }
 
 func TestErrorObject_AddParam2(t *testing.T) {
